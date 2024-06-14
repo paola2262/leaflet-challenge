@@ -1,0 +1,33 @@
+/* Reset default padding and margin for the body */
+body {
+  padding: 0;
+  margin: 0;
+}
+
+/* Set the height of elements to 100% of the viewport */
+#map,
+body,
+html {
+  height: 100%;
+}
+
+/* Define styles for the legend class */
+.legend {
+  line-height: 20px; /* Increased line height */
+  color: #333333; /* Darkened text color */
+  background-color: #f0f0f0; /* Lightened background color */
+  padding: 12px; /* Increased padding */
+  border-radius: 10px; /* Adjusted border radius */
+  box-shadow: 2px 2px 5px #777777; /* Reduced box shadow */
+}
+
+/* Define styles for icons inside the legend */
+.legend i {
+  width: 20px; /* Increased icon width */
+  height: 20px; /* Increased icon height */
+  float: left;
+  margin-right: 10px; /* Adjusted margin */
+  opacity: 0.8; /* Increased opacity */
+}
+
+

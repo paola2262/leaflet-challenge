@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
+  <title>Leaflet Step-1</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.0-rc.3/dist/leaflet.css" />
+
+  <!-- Our CSS -->
+  <link rel="stylesheet" type="text/css" href="static/css/style.css">
+
+  <!-- Satellite MapBox -->
+  <script src="https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.js"></script>
+  <link href="https://api.mapbox.com/mapbox-gl-js/v1.12.0/mapbox-gl.css" rel="stylesheet" />
+
+</head>
+<body>
+
+  <!-- The div that holds our map -->
+  <div id="map"></div>
+
+  <!-- Leaflet JavaScript -->
+  <script src="https://unpkg.com/leaflet@1.0.0-rc.3/dist/leaflet.js"></script>
+  <!-- D3 JavaScript -->
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/4.2.3/d3.min.js"></script>
+  <!-- Our JavaScript -->
+  <script type="text/javascript" src="static/js/config.js"></script>
+  <script type="text/javascript" src="static/js/logic.js"></script>
+
+  <script>
+    const API_KEY = "pk.eyJ1IjoicGFvbGEyMjYyIiwiYSI6ImNseGR0aGw1dTA5czIyanBvdjB3cm4zdmQifQ.doCbPZcQe5NPhjP6Ce0q-g";
+    const platesDataUrl = "Data/PB2002_plates.json";
+    const earthquakeDataUrl = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson";
+
+    // Perform a GET request to the earthquake data URL
+    d3.json(earthquakeDataUrl).then(function(data) {
+        // Once we get a response, send the data.features object to the createFeatures function.
+        createFeatures(data.features);
+    });
+
+    function createFeatures(earthquakeData) {
+        // Give each feature a popup describing the place and time of the earthquakes
+        function onEachFeature(feature, layer) {
+            layer.bindPopup(`<h3>Where: ${feature.properties.place}</h3><hr><p>Time: ${new Date(feature.properties.time)}</p><hr><p>Magnitude: ${feature.properties.mag}</p><hr><p>Number of "Felt" Reports: ${feature.properties.felt}`);
+        }
+
+        // Create a GeoJSON layer containing the features array on the earthquakeData object
+        function createCircleMarker(feature, latlng) {
+            let options = {
+                radius: feature.properties.mag * 5,
+                fillColor: chooseColor(feature.properties.mag),
+                color: chooseColor(feature.properties.mag),
+                weight: 1,
+                opacity: 0.8,
+                fillOpacity: 0.35
+            }
+            return L.circleMarker(latlng, options);
+        }
+
+        // Create a variable for earthquakes to house latlng, each feature for popup, and circle radius/color/weight/opacity
+        let earthquakes = L.geoJSON(earthquakeData, {
+            onEachFeature: onEachFeature,
+            pointToLayer: createCircleMarker
+        });
+
+        // Fetch tectonic plates data
+        d3.json(platesDataUrl, function(platesData) {
+            let tectonicPlates = L.geoJSON(platesData, {
+                style: function() {
+                    return {
+                        color: "#FF9B00",
+                        fillOpacity: 0
+                    };
+                }
+            });
+
+            // Create overlay for tectonic plates
+            let tectonicPlatesOverlay = {
+                "Tectonic Plates": tectonicPlates
+            };
+
+            // Create additional base maps
+            let streetstylemap = L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
+                attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
+                maxZoom: 20,
+                id: "outdoors-v11",
+                accessToken: API_KEY
+            });
+
+            // Define a baseMaps object to hold our base layers
+            let baseMaps = {
+                "Outdoors": streetstylemap,
+                "Satellite": L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/satellite-v9/tiles/{z}/{x}/{y}?access_token={accessToken}", {
+                    attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
+                    maxZoom: 20,
+                    id: "satellite-v9",
+                    accessToken: API_KEY
+                }),
+                "Grayscale": L.tileLayer("https://api.mapbox.com/styles/v1/mapbox/{id}/tiles/{z}/{x}/{y}?access_token={accessToken}", {
+                    attribution: "Map data &copy; <a href=\"https://www.openstreetmap.org/\">OpenStreetMap</a> contributors, <a href=\"https://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA</a>, Imagery © <a href=\"https://www.mapbox.com/\">Mapbox</a>",
+                    maxZoom: 20,
+                    id: "light-v10",
+                    accessToken: API_KEY
+                })
+            };
+
+            // Create overlay object to hold our overlay layers
+            let overlayMaps = {
+                "Earthquakes": earthquakes
+            };
+
+            // Add tectonic plates overlay to overlayMaps
+            overlayMaps = { ...overlayMaps, ...tectonicPlatesOverlay };
+
+            // Create our map, giving it the streetmap and earthquakes layers to display on load
+            let myMap = L.map("map", {
+                center: [39.8282, -98.5795],
+                zoom: 4,
+                layers: [streetstylemap, earthquakes]
+            });
+
+            // Add the layer control to the map
+            L.control.layers(baseMaps, overlayMaps, {
+                collapsed: false
+            }).addTo(myMap);
+
+            legend.addTo(myMap);
+        });
+    }
+
+    // Circles color palette based on mag (feature) data marker
+    function chooseColor(mag) {
+        switch (true) {
+            case (1.0 <= mag && mag <= 2.5):
+                return "#0071BC"; // Strong blue
+            case (2.5 <= mag && mag <= 4.0):
+                return "#35BC00";
+            case (4.0 <= mag && mag <= 5.5):
+                return "#BCBC00";
+            case (5.5 <= mag && mag <= 8.0):
+                return "#BC3500";
+            case (8.0 <= mag && mag <= 20.0):
+                return "#BC0000";
+            default:
+                return "#E2FFAE";
+        }
+    }
+
+    // Create map legend to provide context for map data
+    let legend = L.control({ position: 'bottomright' });
+
+    legend.onAdd = function() {
+        var div = L.DomUtil.create('div', 'info legend');
+        var grades = [1.0, 2.5, 4.0, 5.5, 8.0];
+        var legendInfo = "<h4>Magnitude</h4>";
+
+        div.innerHTML = legendInfo;
+
+        // Go through each magnitude item to label and color the legend
+        // Push to labels array as list item
+        for (var i = 0; i < grades.length; i++) {
+            div.innerHTML +=
+                '<i style="background:' + chooseColor(grades[i] + 1) + '"></i> ' +
+                grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+        }
+
+        return div;
+    };
+
+  </script>
+</body>
+</html>
