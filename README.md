@@ -1,5 +1,5 @@
-# leaflet-challenge / Module 15
-
+# Leaflet-challenge / Module 15
+## Student Paola Moreno
 ### Part 1: Create the Earthquake Visualization
 ![Result1.jpeg](Result1.jpeg)
 
@@ -35,6 +35,9 @@ API, and tectonic plate data is obtained from: https://docs.mapbox.com/
 
 This image demonstrates how you can extend your visualization to incorporate more data layers, enriching the overall presentation.
 
+
+### References
+Dataset created by the United States Geological Survey
 
 
 
